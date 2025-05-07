@@ -44,13 +44,13 @@ st.markdown("""
 
 st.title("Verifica conoscenze infusion")
 
-# Stato iniziale
+# Inizializza stato
 if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
 if "proseguito" not in st.session_state:
     st.session_state["proseguito"] = False
 
-# Carica il file
+# Caricamento file
 file_path = "questionario conoscenze infusion.xlsx"
 try:
     df = pd.read_excel(file_path)
@@ -59,11 +59,17 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
-# Verifica colonne essenziali
-required = {"principio", "Domanda", "Corretta", "opzione 1"}
-if not required.issubset(df.columns.str.lower()):
-    st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', 'Corretta', 'opzione 1', …")
+# Trova colonne opzione*
+option_cols = [c for c in df.columns if c.lower().strip().startswith("opzione")]
+if not option_cols:
+    st.error("Nessuna colonna di opzione trovata: assicurati di avere colonne che iniziano con 'opzione'.")
     st.stop()
+
+# Controllo colonne obbligatorie
+for col in ("principio", "Domanda", "Corretta", "opzione 1"):
+    if col not in df.columns:
+        st.error(f"Manca la colonna obbligatoria: '{col}'")
+        st.stop()
 
 # Selezione casuale delle domande
 if "domande_selezionate" not in st.session_state:
@@ -87,7 +93,6 @@ elif email_mentor and not email_mentor.endswith("@auxiell.com"):
     errore_email = "L'email del mentor deve terminare con @auxiell.com"
 elif email_compilatore and email_mentor and email_compilatore == email_mentor:
     errore_email = "La tua email e quella del mentor devono essere diverse"
-
 if errore_email:
     st.warning(errore_email)
 
@@ -98,31 +103,30 @@ if utente and email_compilatore and email_mentor and not errore_email and not st
         st.session_state["proseguito"] = True
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Se possiamo proseguire…
+# Quiz
 if st.session_state["proseguito"]:
     risposte = []
-
     st.write("### Rispondi alle seguenti domande:")
 
     for idx, row in domande.iterrows():
         st.markdown(f"**{row['Domanda']}**")
-        # Controlla se è domanda aperta: opzione 1 vuota/NaN
+        # Domanda aperta se 'opzione 1' è NaN
         if pd.isna(row["opzione 1"]):
-            ans = st.text_input(f"Risposta libera ({row['principio']})", key=f"open_{idx}", disabled=st.session_state["submitted"])
+            ans = st.text_input(
+                f"Risposta libera ({row['principio']})",
+                key=f"open_{idx}",
+                disabled=st.session_state["submitted"]
+            )
             risposte.append({
                 "Tipo": "aperta",
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
                 "Risposta": ans,
                 "Corretta": None,
-                "Risultato": None
+                "Esatta": None
             })
         else:
-            # Estrai tutte le colonne opzione*
-            opts = [
-                str(row[c]) for c in df.columns
-                if c.lower().startswith("opzione") and pd.notna(row[c])
-            ]
+            opts = [str(row[c]) for c in option_cols if pd.notna(row[c])]
             sel = st.radio(
                 f"Argomento: {row['principio']}",
                 opts,
@@ -138,20 +142,20 @@ if st.session_state["proseguito"]:
                 "Domanda": row["Domanda"],
                 "Risposta": sel,
                 "Corretta": row["Corretta"],
-                "Risultato": is_corr
+                "Esatta": is_corr
             })
 
-    # Bottone Invio
+    # Invio risposte
     if not st.session_state["submitted"]:
         if st.button("Invia Risposte"):
             st.session_state["submitted"] = True
 
-    # Dopo l’invio: calcola punteggio e invia email
+    # Calcolo punteggio e invio email
     if st.session_state["submitted"]:
         df_r = pd.DataFrame(risposte)
         chiuse = df_r[df_r["Tipo"] == "chiusa"]
         n_tot = len(chiuse)
-        n_cor = int(chiuse["Risultato"].sum()) if n_tot else 0
+        n_cor = int(chiuse["Esatta"].sum()) if n_tot else 0
         perc = int(n_cor / n_tot * 100) if n_tot else 0
         st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
@@ -168,9 +172,9 @@ if st.session_state["proseguito"]:
         msg["To"] = email_mentor
         msg["Subject"] = "Risultati Quiz Verifica Conoscenze"
         msg.attach(MIMEText(f"In allegato i risultati di {utente} ({email_compilatore}).", "plain"))
-        allegato = MIMEApplication(buf.getvalue(), Name=f"risultati_{utente}.xlsx")
-        allegato["Content-Disposition"] = f'attachment; filename="risultati_{utente}.xlsx"'
-        msg.attach(allegato)
+        attachment = MIMEApplication(buf.getvalue(), Name=f"risultati_{utente}.xlsx")
+        attachment["Content-Disposition"] = f'attachment; filename="risultati_{utente}.xlsx"'
+        msg.attach(attachment)
 
         try:
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
