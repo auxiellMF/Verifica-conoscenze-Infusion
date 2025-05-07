@@ -2,9 +2,8 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import random
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
+import smtplib
+from email.message import EmailMessage
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -24,18 +23,19 @@ except FileNotFoundError:
 # Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
+    # Estrai domande solo una volta
     if "domande_selezionate" not in st.session_state:
         st.session_state["domande_selezionate"] = (
             df.groupby("principio", group_keys=False)
-            .apply(lambda x: x.sample(n=min(2, len(x)))).reset_index(drop=True)
+            .apply(lambda x: x.sample(n=min(2, len(x))))
+            .reset_index(drop=True)
         )
 
     domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
-    email = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
-    if utente and email:
+    if utente:
         risposte_date = []
         tutte_risposte_date = True
 
@@ -80,79 +80,46 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             punteggio = risultati_df["Esatta"].sum()
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
-            # Genera PDF
-            buffer = BytesIO()
-            c = canvas.Canvas(buffer, pagesize=A4)
-            width, height = A4
+            risultati_df["Utente"] = utente
 
-            y = height - 50
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(50, y, f"Risultati del Quiz - {utente}")
-            y -= 20
-            c.setFont("Helvetica", 12)
-            c.drawString(50, y, f"E-mail Mentor: {email}")
-            y -= 30
-
-            # Funzione per scrivere testo che va a capo
-            def wrap_text(c, text, x, y, width):
-                # Imposta il font per il testo
-                c.setFont("Helvetica", 10)
-                lines = text.split('\n')
-                for line in lines:
-                    text_object = c.beginText(x, y)
-                    text_object.setFont("Helvetica", 10)
-                    text_object.setTextOrigin(x, y)
-                    text_object.textLines(line)
-                    c.drawText(text_object)
-                    y -= 16  # Spazio tra le righe
-                return y
-
-            # Cicla attraverso i risultati per ciascuna domanda
-            for idx, r in risultati_df.iterrows():
-                domanda = r["Domanda"]
-                risposta = r["RispostaData"]
-                corretta = r["Corretta"]
-                esatta = "Giusto" if r["Esatta"] else "Sbagliato"
-                
-                # Scrivere la domanda in grassetto
-                c.setFont("Helvetica-Bold", 12)
-                y = wrap_text(c, f"Domanda: {domanda}", 50, y, width - 100)
-                
-                # Scrivere la risposta
-                c.setFont("Helvetica", 10)
-                if r["Esatta"]:
-                    c.setFillColor(colors.green)  # Colore verde per la risposta corretta
-                    risposta_line = f"Risposta corretta: {risposta} ({esatta})"
-                else:
-                    c.setFillColor(colors.black)
-                    risposta_line = f"Risposta data: {risposta} ({esatta})"
-                
-                y = wrap_text(c, risposta_line, 50, y, width - 100)
-
-                # Scrivere se è giusto o sbagliato
-                c.setFont("Helvetica", 10)
-                y = wrap_text(c, f"{esatta}", 50, y, width - 100)
-
-                y -= 10  # spazio extra tra domande
-
-            # Aggiungi il punteggio finale
-            if y < 50:
-                c.showPage()
-                y = height - 50
-
-            c.setFont("Helvetica-Bold", 12)
-            c.setFillColor(colors.black)
-            c.drawString(50, y, f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
-
-            c.save()
-            buffer.seek(0)
+            output = BytesIO()
+            risultati_df.to_excel(output, index=False, engine='openpyxl')
+            output.seek(0)
 
             st.download_button(
-                label="📄 Scarica i risultati in PDF",
-                data=buffer,
-                file_name=f"risultati_{utente}.pdf",
-                mime="application/pdf"
+                label="📥 Scarica i risultati in Excel",
+                data=output,
+                file_name=f"risultati_{utente}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
+            # === EMAIL SECTION ===
+            destinatario = st.text_input("Inserisci la tua email per ricevere i risultati", key="email_input")
+
+            if destinatario and st.button("📨 Invia risultati via email"):
+                email_mittente = "c07275691@gmail.com"       # << CAMBIA QUI
+                password_app = "prova1990!!"          # << CAMBIA QUI
+
+                msg = EmailMessage()
+                msg["Subject"] = "Risultati Quiz"
+                msg["From"] = email_mittente
+                msg["To"] = destinatario
+                msg.set_content(f"Ciao {utente}, in allegato trovi i risultati del tuo quiz.")
+
+                msg.add_attachment(
+                    output.getvalue(),
+                    maintype="application",
+                    subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    filename=f"risultati_{utente}.xlsx"
+                )
+
+                try:
+                    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                        smtp.login(email_mittente, password_app)
+                        smtp.send_message(msg)
+                    st.success("📧 Email inviata con successo!")
+                except Exception as e:
+                    st.error(f"Errore durante l'invio dell'email: {e}")
 
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
