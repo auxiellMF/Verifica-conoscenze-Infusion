@@ -27,7 +27,7 @@ st.markdown("""
     }
     </style>
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/<TUO_USER>/<TUO_REPO>/main/auxiell_logobase.png" alt="Logo Auxiell">
+        <img src="https://github.com/auxiellMF/prova/blob/3585c1e6b73666e1338d01fb8f398396533afb2e/auxiell_logobase.png">
     </div>
 """, unsafe_allow_html=True)
 
