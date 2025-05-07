@@ -5,11 +5,34 @@ import random
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from email.mime.text import MIMEText  # Aggiungi questa importazione
+from email.mime.text import MIMEText
+from PIL import Image
+
+st.set_page_config(page_title="Quiz auxiell", layout="centered")
+
+# Sticky logo in alto
+st.markdown("""
+    <style>
+    .logo-container {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: white;
+        padding: 10px 0;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+    .logo-container img {
+        max-height: 80px;
+    }
+    </style>
+    <div class="logo-container">
+        <img src="https://raw.githubusercontent.com/<TUO_USER>/<TUO_REPO>/main/auxiell_logobase.png" alt="Logo Auxiell">
+    </div>
+""", unsafe_allow_html=True)
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
-# Inizializza lo stato se non è ancora presente
 if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
 if "proseguito" not in st.session_state:
@@ -24,10 +47,8 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
-# Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
-    # Estrai domande solo una volta
     if "domande_selezionate" not in st.session_state:
         st.session_state["domande_selezionate"] = (
             df.groupby("principio", group_keys=False)
@@ -40,16 +61,16 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     utente = st.text_input("Inserisci il tuo nome")
     email = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
-    # Mostra il pulsante "Prosegui" se nome ed email sono compilati e non si è ancora proseguito
     if utente and email and not st.session_state["proseguito"]:
         st.markdown("<div style='text-align: center;'><br><br>", unsafe_allow_html=True)
-        if st.button("Prosegui"):
+        if st.button("➡️ Prosegui"):
             st.session_state["proseguito"] = True
         st.markdown("</div>", unsafe_allow_html=True)
 
     if st.session_state["proseguito"]:
         risposte_date = []
         tutte_risposte_date = True
+        num_risposte = 0
 
         st.write("### Rispondi alle seguenti domande:")
 
@@ -71,6 +92,8 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
             if not st.session_state["submitted"] and risposta is None:
                 tutte_risposte_date = False
+            elif risposta is not None:
+                num_risposte += 1
 
             risposte_date.append({
                 "Argomento": row["principio"],
@@ -79,6 +102,9 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 "Corretta": row["Corretta"],
                 "Esatta": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
             })
+
+        progresso = num_risposte / len(domande_selezionate)
+        st.progress(progresso, text=f"{num_risposte} di {len(domande_selezionate)} domande completate")
 
         if not st.session_state["submitted"]:
             if st.button("Invia Risposte"):
@@ -95,31 +121,26 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             risultati_df["Utente"] = utente
             risultati_df["Email"] = email
 
-            # Salvataggio dei risultati in memoria
             output = BytesIO()
             risultati_df.to_excel(output, index=False, engine='openpyxl')
             output.seek(0)
 
-            # Preparazione dell'email
             msg = MIMEMultipart()
-            msg['From'] = 'tuoindirizzo@gmail.com'  # Il tuo indirizzo email Gmail
-            msg['To'] = email  # L'indirizzo del mentor
+            msg['From'] = 'tuoindirizzo@gmail.com'
+            msg['To'] = email
             msg['Subject'] = 'Risultati Quiz Verifica Conoscenze'
 
-            # Aggiungi il corpo del messaggio
             body = "In allegato trovi i risultati del quiz.\n\nCordiali saluti."
             msg.attach(MIMEText(body, 'plain'))
 
-            # Aggiungi il file Excel come allegato
             part = MIMEApplication(output.getvalue(), Name=f"risultati_{utente}.xlsx")
             part['Content-Disposition'] = f'attachment; filename="risultati_{utente}.xlsx"'
             msg.attach(part)
 
-            # Invia l'email tramite SMTP di Gmail
             try:
                 with smtplib.SMTP('smtp.gmail.com', 587) as server:
                     server.starttls()
-                    server.login('infusionauxiell@gmail.com', 'ubrwqtcnbyjiqach')  # Usa la password per l'app
+                    server.login('infusionauxiell@gmail.com', 'ubrwqtcnbyjiqach')
                     server.sendmail(msg['From'], msg['To'], msg.as_string())
                 st.success(f"Email inviata con successo a {email}")
             except Exception as e:
