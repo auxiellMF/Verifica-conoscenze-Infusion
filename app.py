@@ -15,7 +15,7 @@ st.markdown("""
     <style>
     body {
         padding-top: 90px; /* Aggiungi solo padding superiore */
-        padding-bottom: 50px; /* Aggiungi solo padding inferiore */
+        padding-bottom: 0px; /* Aggiungi solo padding inferiore */
     
     }
 
