@@ -13,25 +13,30 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 # Sticky logo in alto
 st.markdown("""
     <style>
-    .logo-container {
-        position: sticky;
+    .fixed-logo {
+        position: fixed;
         top: 0;
-        z-index: 100;
+        left: 0;
+        width: 100%;
         background-color: white;
-        padding: 10px 0;
         text-align: center;
+        padding: 10px 0;
+        z-index: 1000;
         border-bottom: 1px solid #ddd;
     }
-    .logo-container img {
+    .fixed-logo img {
         max-height: 80px;
     }
+    .block-container {
+        padding-top: 100px !important;  /* Per non coprire il contenuto */
+    }
     </style>
-    <div class="logo-container">
+    <div class="fixed-logo">
         <img src="https://raw.githubusercontent.com/auxiellMF/prova/0e7fd16a41139ea306af35cc0f6dccb852403b86/auxiell_logobase.png" alt="Logo Auxiell">
     </div>
 """, unsafe_allow_html=True)
 
-st.title("Quiz da Excel - Verifica Conoscenze")
+st.title("Verifica conoscenze infusion")
 
 if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
@@ -42,7 +47,7 @@ file_path = "questionario conoscenze infusion.xlsx"
 
 try:
     df = pd.read_excel(file_path)
-    st.success("File Excel caricato automaticamente dal repository!")
+    st.success("Domande pronte!")
 except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
