@@ -4,11 +4,9 @@ import pandas as pd
 st.title("Quiz da Excel")
 
 # Caricamento file
-file = st.file_uploader("Carica il file Excel con le domande", type=["xlsx"])
+df = pd.read_excel("questionario conoscenze infusion.xlsx")
+st.success("File Excel caricato automaticamente dal repository!")
 
-if file:
-    df = pd.read_excel(file)
-    st.success("File caricato correttamente!")
 
     # Verifica che ci siano le colonne richieste
     if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
