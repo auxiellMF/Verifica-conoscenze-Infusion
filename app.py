@@ -19,7 +19,7 @@ st.markdown("""
 
     .fixed-logo-container {
         position: fixed;
-        top: 1;
+        top: 0;
         left: 0;
         width: 100%;
         background-color: white;
@@ -35,9 +35,10 @@ st.markdown("""
 
     .fixed-logo-divider {
         border: none;
-        height: 1px;
-        background-color: #ccc;
+        height: 1px; /* Altezza della riga */
+        background-color: #ccc; /* Colore della riga */
         margin: 0;
+        padding: 0; /* Rimuoviamo eventuali spazi extra */
     }
     </style>
 
