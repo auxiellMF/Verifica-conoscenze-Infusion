@@ -26,7 +26,7 @@ st.markdown("""
         width: 100%;
         background-color: white;
         text-align: center;
-        padding: 0px 0;
+        padding: 45px 0;
         z-index: 1000;
         box-shadow: 0px 2px 4px rgba(0,0,0,0.1); /* ombra leggera */
     }
