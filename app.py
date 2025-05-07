@@ -115,7 +115,7 @@ if st.session_state["proseguito"]:
                 "Domanda": row["Domanda"],
                 "Risposta": ans,
                 "Corretta": None,
-                "Esatta": None
+                "Risultato": None
             })
         else:
             # Estrai tutte le colonne opzione*
@@ -138,7 +138,7 @@ if st.session_state["proseguito"]:
                 "Domanda": row["Domanda"],
                 "Risposta": sel,
                 "Corretta": row["Corretta"],
-                "Esatta": is_corr
+                "Risultato": is_corr
             })
 
     # Bottone Invio
@@ -151,7 +151,7 @@ if st.session_state["proseguito"]:
         df_r = pd.DataFrame(risposte)
         chiuse = df_r[df_r["Tipo"] == "chiusa"]
         n_tot = len(chiuse)
-        n_cor = int(chiuse["Esatta"].sum()) if n_tot else 0
+        n_cor = int(chiuse["Risultato"].sum()) if n_tot else 0
         perc = int(n_cor / n_tot * 100) if n_tot else 0
         st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
