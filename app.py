@@ -119,7 +119,7 @@ if st.session_state["proseguito"]:
         else:
             # opzioni da colonna opzione*
             opts = [str(row[c]) for c in df.columns if c.lower().startswith("opzione") and pd.notna(row[c])]
-            sel = st.radio(f"Argomento: {row['principio']}", opts, key=idx, disabled=st.session_state["submitted"])
+            sel = st.radio(f"Argomento: {row['principio']}", opts, key=none, disabled=st.session_state["submitted"])
             # valutazione
             corrette = [c.strip() for c in str(row["Corretta"]).split(";")]
             is_corr = sel in corrette
