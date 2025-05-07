@@ -52,7 +52,19 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             st.success(f"Punteggio finale: {punteggio} su {len(df)}")
 
             risultati_df["Utente"] = utente
-            risultati_df.to_excel(f"risultati_{utente}.xlsx", index=False)
-            st.success("Risultati salvati in un file Excel nella cartella dell'app!")
+          from io import BytesIO
+
+# Salva il file in memoria
+output = BytesIO()
+risultati_df.to_excel(output, index=False, engine='openpyxl')
+output.seek(0)
+
+# Pulsante di download
+st.download_button(
+    label="📥 Scarica i risultati in Excel",
+    data=output,
+    file_name=f"risultati_{utente}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
