@@ -27,9 +27,10 @@ st.markdown("""
     }
     </style>
     <div class="logo-container">
-        <img src="https://github.com/auxiellMF/prova/blob/3585c1e6b73666e1338d01fb8f398396533afb2e/auxiell_logobase.png" alt="Logo Auxiell">
+        <img src="https://raw.githubusercontent.com/auxiellMF/prova/0e7fd16a41139ea306af35cc0f6dccb852403b86/auxiell_logobase.png" alt="Logo Auxiell">
     </div>
 """, unsafe_allow_html=True)
+
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
