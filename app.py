@@ -4,7 +4,6 @@ from io import BytesIO
 import random
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-import os
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -21,6 +20,7 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
+# Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
     if "domande_selezionate" not in st.session_state:
@@ -81,8 +81,8 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             # Genera PDF
-            pdf_path = f"risultati_{utente}.pdf"
-            c = canvas.Canvas(pdf_path, pagesize=A4)
+            buffer = BytesIO()
+            c = canvas.Canvas(buffer, pagesize=A4)
             width, height = A4
 
             y = height - 50
@@ -110,7 +110,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                         y = height - 50
                     c.drawString(50, y, line)
                     y -= 20
-                y -= 10
+                y -= 10  # spazio extra tra domande
 
             if y < 50:
                 c.showPage()
@@ -118,32 +118,16 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
             c.setFont("Helvetica-Bold", 12)
             c.drawString(50, y, f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
+
             c.save()
+            buffer.seek(0)
 
-            # Invia PDF via Outlook
-            try:
-                import win32com.client as win32
-
-                outlook = win32.Dispatch('outlook.application')
-                mail = outlook.CreateItem(0)
-                mail.To = email
-                mail.Subject = f"Risultati quiz: {utente}"
-                mail.Body = f"Ciao,\n\nIn allegato trovi i risultati del quiz di {utente}.\n\nPunteggio: {punteggio} su {len(domande_selezionate)}\n\nCordiali saluti."
-                mail.Attachments.Add(os.path.abspath(pdf_path))
-                mail.Send()
-
-                st.success(f"📧 Email inviata correttamente a {email}")
-            except Exception as e:
-                st.error(f"Errore nell'invio dell'email: {e}")
-
-            # Per download locale
-            with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label="📄 Scarica i risultati in PDF",
-                    data=f,
-                    file_name=pdf_path,
-                    mime="application/pdf"
-                )
+            st.download_button(
+                label="📄 Scarica i risultati in PDF",
+                data=buffer,
+                file_name=f"risultati_{utente}.pdf",
+                mime="application/pdf"
+            )
 
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
