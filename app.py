@@ -22,11 +22,14 @@ except FileNotFoundError:
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
     # Estrai 2 domande casuali per ogni categoria
-    domande_selezionate = (
-        df.groupby("principio", group_keys=False)
-        .apply(lambda x: x.sample(n=min(2, len(x))))
-        .reset_index(drop=True)
+    if "domande_selezionate" not in st.session_state:
+        st.session_state["domande_selezionate"] = (
+            df.groupby("principio", group_keys=False)
+            .apply(lambda x: x.sample(n=min(2, len(x))))
+            .reset_index(drop=True)
     )
+
+domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
 
