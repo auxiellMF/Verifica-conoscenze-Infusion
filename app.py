@@ -1,4 +1,3 @@
-# matteo il boss della mafia
 
 import streamlit as st
 import pandas as pd
