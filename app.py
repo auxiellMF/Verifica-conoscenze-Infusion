@@ -13,11 +13,6 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 # Sticky logo in alto
 st.markdown("""
     <style>
-    body {
-        padding-top: -90px; /* Aggiungi solo padding superiore */
-        padding-bottom: -50px; /* Aggiungi solo padding inferiore */
-    
-    }
 
     .fixed-logo-container {
         position: fixed;
@@ -26,7 +21,8 @@ st.markdown("""
         width: 100%;
         background-color: white;
         text-align: center;
-        padding: 45px 0;
+        padding-top: -90px; /* Aggiungi solo padding superiore */
+        padding-bottom: -50px; /* Aggiungi solo padding inferiore */
         z-index: 1000;
         box-shadow: 0px 2px 4px rgba(0,0,0,0.1); /* ombra leggera */
     }
