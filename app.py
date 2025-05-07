@@ -3,7 +3,8 @@ import pandas as pd
 from io import BytesIO
 import random
 import smtplib
-from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -34,8 +35,9 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
+    email = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
-    if utente:
+    if utente and email:
         risposte_date = []
         tutte_risposte_date = True
 
@@ -81,45 +83,37 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             risultati_df["Utente"] = utente
+            risultati_df["Email"] = email
 
+            # Salvataggio dei risultati in memoria
             output = BytesIO()
             risultati_df.to_excel(output, index=False, engine='openpyxl')
             output.seek(0)
 
-            st.download_button(
-                label="📥 Scarica i risultati in Excel",
-                data=output,
-                file_name=f"risultati_{utente}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            # Preparazione dell'email
+            msg = MIMEMultipart()
+            msg['From'] = 'tuoindirizzo@gmail.com'  # Il tuo indirizzo email Gmail
+            msg['To'] = email  # L'indirizzo del mentor
+            msg['Subject'] = 'Risultati Quiz Verifica Conoscenze'
 
-            # === EMAIL SECTION ===
-            destinatario = st.text_input("Inserisci la tua email per ricevere i risultati", key="email_input")
+            # Aggiungi il corpo del messaggio
+            body = "In allegato trovi i risultati del quiz.\n\nCordiali saluti."
+            msg.attach(MIMEText(body, 'plain'))
 
-            if destinatario and st.button("📨 Invia risultati via email"):
-                email_mittente = "c07275691@gmail.com"       # << CAMBIA QUI
-                password_app = "prova1990!!"          # << CAMBIA QUI
+            # Aggiungi il file Excel come allegato
+            part = MIMEApplication(output.getvalue(), Name=f"risultati_{utente}.xlsx")
+            part['Content-Disposition'] = f'attachment; filename="risultati_{utente}.xlsx"'
+            msg.attach(part)
 
-                msg = EmailMessage()
-                msg["Subject"] = "Risultati Quiz"
-                msg["From"] = email_mittente
-                msg["To"] = destinatario
-                msg.set_content(f"Ciao {utente}, in allegato trovi i risultati del tuo quiz.")
-
-                msg.add_attachment(
-                    output.getvalue(),
-                    maintype="application",
-                    subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    filename=f"risultati_{utente}.xlsx"
-                )
-
-                try:
-                    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-                        smtp.login(email_mittente, password_app)
-                        smtp.send_message(msg)
-                    st.success("📧 Email inviata con successo!")
-                except Exception as e:
-                    st.error(f"Errore durante l'invio dell'email: {e}")
+            # Invia l'email tramite SMTP di Gmail
+            try:
+                with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                    server.starttls()
+                    server.login('tuoindirizzo@gmail.com', 'password_app')  # Usa la password per l'app
+                    server.sendmail(msg['From'], msg['To'], msg.as_string())
+                st.success(f"Email inviata con successo a {email}")
+            except Exception as e:
+                st.error(f"Errore nell'invio dell'email: {str(e)}")
 
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
