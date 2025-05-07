@@ -5,6 +5,10 @@ import random
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
+# Inizializza lo stato se non è ancora presente
+if "submitted" not in st.session_state:
+    st.session_state["submitted"] = False
+
 file_path = "questionario conoscenze infusion.xlsx"
 
 try:
@@ -20,7 +24,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     # Estrai 2 domande casuali per ogni categoria
     domande_selezionate = (
         df.groupby("principio", group_keys=False)
-        .apply(lambda x: x.sample(n=min(2, len(x)), random_state=42))
+        .apply(lambda x: x.sample(n=min(2, len(x))))
         .reset_index(drop=True)
     )
 
@@ -44,10 +48,11 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 f"Argomento: {row['principio']}", 
                 opzioni, 
                 key=idx, 
-                index=None  # Nessuna preselezione
+                index=None,  # Nessuna preselezione
+                disabled=st.session_state["submitted"]  # Disabilita se già inviato
             )
 
-            if risposta is None:
+            if not st.session_state["submitted"] and risposta is None:
                 tutte_risposte_date = False
 
             risposte_date.append({ 
@@ -58,25 +63,29 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 "Esatta": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
             })
 
-        if st.button("Invia Risposte"):
-            if not tutte_risposte_date:
-                st.warning("⚠️ Per favore rispondi a tutte le domande prima di inviare.")
-            else:
-                risultati_df = pd.DataFrame(risposte_date)
-                punteggio = risultati_df["Esatta"].sum()
-                st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
+        if not st.session_state["submitted"]:
+            if st.button("Invia Risposte"):
+                if not tutte_risposte_date:
+                    st.warning("⚠️ Per favore rispondi a tutte le domande prima di inviare.")
+                else:
+                    st.session_state["submitted"] = True  # Blocca la modifica
 
-                risultati_df["Utente"] = utente
+        if st.session_state["submitted"]:
+            risultati_df = pd.DataFrame(risposte_date)
+            punteggio = risultati_df["Esatta"].sum()
+            st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
-                output = BytesIO()
-                risultati_df.to_excel(output, index=False, engine='openpyxl')
-                output.seek(0)
+            risultati_df["Utente"] = utente
 
-                st.download_button(
-                    label="📥 Scarica i risultati in Excel",
-                    data=output,
-                    file_name=f"risultati_{utente}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+            output = BytesIO()
+            risultati_df.to_excel(output, index=False, engine='openpyxl')
+            output.seek(0)
+
+            st.download_button(
+                label="📥 Scarica i risultati in Excel",
+                data=output,
+                file_name=f"risultati_{utente}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
