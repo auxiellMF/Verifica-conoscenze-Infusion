@@ -13,6 +13,11 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 # Sticky logo in alto
 st.markdown("""
     <style>
+    /* Sposta tutto il contenuto verso il basso per evitare che venga coperto dal logo */
+    body {
+        margin-top: 100px;
+    }
+
     .fixed-logo-container {
         position: fixed;
         top: 0;
@@ -26,17 +31,16 @@ st.markdown("""
         z-index: 1000;
         border-bottom: 1px solid #ddd;
     }
+
     .fixed-logo-container img {
         max-height: 80px;
-    }
-    .block-container {
-        padding-top: 100px !important;
     }
     </style>
     <div class="fixed-logo-container">
         <img src="https://raw.githubusercontent.com/auxiellMF/prova/0e7fd16a41139ea306af35cc0f6dccb852403b86/auxiell_logobase.png" alt="Logo Auxiell">
     </div>
 """, unsafe_allow_html=True)
+
 
 st.title("Verifica conoscenze infusion")
 
