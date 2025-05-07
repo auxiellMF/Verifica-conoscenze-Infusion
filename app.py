@@ -5,6 +5,7 @@ import random
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText  # Aggiungi questa importazione
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -98,7 +99,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
             # Aggiungi il corpo del messaggio
             body = "In allegato trovi i risultati del quiz.\n\nCordiali saluti."
-            msg.attach(MIMEText(body, 'plain'))
+            msg.attach(MIMEText(body, 'plain'))  # Ora dovrebbe funzionare
 
             # Aggiungi il file Excel come allegato
             part = MIMEApplication(output.getvalue(), Name=f"risultati_{utente}.xlsx")
