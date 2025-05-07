@@ -21,21 +21,21 @@ except FileNotFoundError:
 # Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
-    # Estrai 2 domande casuali per ogni categoria
+    # Estrai domande solo una volta
     if "domande_selezionate" not in st.session_state:
         st.session_state["domande_selezionate"] = (
             df.groupby("principio", group_keys=False)
             .apply(lambda x: x.sample(n=min(2, len(x))))
             .reset_index(drop=True)
-    )
+        )
 
-domande_selezionate = st.session_state["domande_selezionate"]
+    domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
 
     if utente:
         risposte_date = []
-        tutte_risposte_date = True  # Flag per controllare se tutte le risposte sono state date
+        tutte_risposte_date = True
 
         st.write("### Rispondi alle seguenti domande:")
 
@@ -48,17 +48,17 @@ domande_selezionate = st.session_state["domande_selezionate"]
                     opzioni.append(str(row[col]))
 
             risposta = st.radio(
-                f"Argomento: {row['principio']}", 
-                opzioni, 
-                key=idx, 
-                index=None,  # Nessuna preselezione
-                disabled=st.session_state["submitted"]  # Disabilita se già inviato
+                f"Argomento: {row['principio']}",
+                opzioni,
+                key=idx,
+                index=None,
+                disabled=st.session_state["submitted"]
             )
 
             if not st.session_state["submitted"] and risposta is None:
                 tutte_risposte_date = False
 
-            risposte_date.append({ 
+            risposte_date.append({
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
                 "RispostaData": risposta,
@@ -71,7 +71,7 @@ domande_selezionate = st.session_state["domande_selezionate"]
                 if not tutte_risposte_date:
                     st.warning("⚠️ Per favore rispondi a tutte le domande prima di inviare.")
                 else:
-                    st.session_state["submitted"] = True  # Blocca la modifica
+                    st.session_state["submitted"] = True
 
         if st.session_state["submitted"]:
             risultati_df = pd.DataFrame(risposte_date)
@@ -90,5 +90,6 @@ domande_selezionate = st.session_state["domande_selezionate"]
                 file_name=f"risultati_{utente}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
