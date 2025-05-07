@@ -32,8 +32,9 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
+    email = st.text_input("Inserisci il tuo indirizzo email")
 
-    if utente:
+    if utente and email:
         risposte_date = []
         tutte_risposte_date = True
 
@@ -66,12 +67,12 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 "Esatta": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
             })
 
-        if not st.session_state["submitted"]:
+        # (if not st.session_state["submitted"]:
             if st.button("Invia Risposte"):
                 if not tutte_risposte_date:
                     st.warning("⚠️ Per favore rispondi a tutte le domande prima di inviare.")
                 else:
-                    st.session_state["submitted"] = True
+                    st.session_state["submitted"] = True)
 
         if st.session_state["submitted"]:
             risultati_df = pd.DataFrame(risposte_date)
@@ -79,6 +80,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             risultati_df["Utente"] = utente
+            risultati_df["Email"] = email
 
             output = BytesIO()
             risultati_df.to_excel(output, index=False, engine='openpyxl')
