@@ -14,7 +14,7 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 st.markdown("""
     <style>
     body {
-        margin-top: 120px; /* spazio extra per includere la nuova barra */
+        margin-top: 180px; /* Aumento dello spazio per evitare che il logo copra il titolo */
     }
 
     .fixed-logo-container {
@@ -47,6 +47,7 @@ st.markdown("""
         <hr class="fixed-logo-divider">
     </div>
 """, unsafe_allow_html=True)
+
 
 
 
