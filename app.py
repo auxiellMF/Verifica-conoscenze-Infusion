@@ -20,7 +20,7 @@ st.markdown("""
 
     .fixed-logo-container {
         position: fixed;
-        top: 0;
+        top: 30;
         left: 50%;
         transform: translateX(-50%);
         width: 90%;
