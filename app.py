@@ -60,8 +60,8 @@ except FileNotFoundError:
     st.stop()
 
 # Controllo colonne essenziali
-if not {"principio","Domanda","Corretta","opzione1"}.issubset(df.columns):
-    st.error("Il file Excel deve contenere: 'principio', 'Domanda', 'Corretta', 'opzione1', …")
+if not {"principio","Domanda","Corretta","opzione 1"}.issubset(df.columns):
+    st.error("Il file Excel deve contenere: 'principio', 'Domanda', 'Corretta', 'opzione 1', …")
     st.stop()
 
 # Estrai domande casuali
@@ -104,7 +104,7 @@ if st.session_state["proseguito"]:
     # Ciclo domande
     for idx, row in domande.iterrows():
         st.markdown(f"**{row['Domanda']}**")
-        is_aperta = pd.isna(row["opzione1"])
+        is_aperta = pd.isna(row["opzione 1"])
         if is_aperta:
             # campo testo per domanda aperta
             ans = st.text_input(f"Risposta libera ({row['principio']})", key=f"open_{idx}", disabled=st.session_state["submitted"])
