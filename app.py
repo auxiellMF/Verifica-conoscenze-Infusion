@@ -13,25 +13,27 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 # Sticky logo in alto
 st.markdown("""
     <style>
-    .fixed-logo {
+    .fixed-logo-container {
         position: fixed;
         top: 0;
-        left: 0;
-        width: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 700px;
         background-color: white;
         text-align: center;
         padding: 10px 0;
         z-index: 1000;
         border-bottom: 1px solid #ddd;
     }
-    .fixed-logo img {
+    .fixed-logo-container img {
         max-height: 80px;
     }
     .block-container {
-        padding-top: 100px !important;  /* Per non coprire il contenuto */
+        padding-top: 100px !important;
     }
     </style>
-    <div class="fixed-logo">
+    <div class="fixed-logo-container">
         <img src="https://raw.githubusercontent.com/auxiellMF/prova/0e7fd16a41139ea306af35cc0f6dccb852403b86/auxiell_logobase.png" alt="Logo Auxiell">
     </div>
 """, unsafe_allow_html=True)
