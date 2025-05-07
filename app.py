@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
+from io import BytesIO  # 👈 Import per generare file in memoria
+
 st.title("Quiz da Excel - Verifica Conoscenze")
 
 # Caricamento automatico del file Excel dal repository
@@ -45,7 +46,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 "Esatta": esatta
             })
 
-        # Mostra il punteggio finale e salva i risultati
+        # Mostra punteggio e pulsante di download
         if st.button("Invia Risposte"):
             risultati_df = pd.DataFrame(risposte_date)
             punteggio = risultati_df["Esatta"].sum()
@@ -53,17 +54,16 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
             risultati_df["Utente"] = utente
 
-# Salva il file in memoria
-output = BytesIO()
-risultati_df.to_excel(output, index=False, engine='openpyxl')
-output.seek(0)
+            # Salva in memoria e offri download
+            output = BytesIO()
+            risultati_df.to_excel(output, index=False, engine='openpyxl')
+            output.seek(0)
 
-# Pulsante di download
-st.download_button(
-    label="📥 Scarica i risultati in Excel",
-    data=output,
-    file_name=f"risultati_{utente}.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+            st.download_button(
+                label="📥 Scarica i risultati in Excel",
+                data=output,
+                file_name=f"risultati_{utente}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
