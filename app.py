@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import random
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import os
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -18,10 +21,8 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
-# Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
-    # Estrai domande solo una volta
     if "domande_selezionate" not in st.session_state:
         st.session_state["domande_selezionate"] = (
             df.groupby("principio", group_keys=False)
@@ -32,7 +33,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
-    email = st.text_input("Inserisci il tuo indirizzo email")
+    email = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
     if utente and email:
         risposte_date = []
@@ -79,19 +80,70 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             punteggio = risultati_df["Esatta"].sum()
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
-            risultati_df["Utente"] = utente
-            risultati_df["Email"] = email
+            # Genera PDF
+            pdf_path = f"risultati_{utente}.pdf"
+            c = canvas.Canvas(pdf_path, pagesize=A4)
+            width, height = A4
 
-            output = BytesIO()
-            risultati_df.to_excel(output, index=False, engine='openpyxl')
-            output.seek(0)
+            y = height - 50
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(50, y, f"Risultati del Quiz - {utente}")
+            y -= 20
+            c.setFont("Helvetica", 12)
+            c.drawString(50, y, f"E-mail Mentor: {email}")
+            y -= 30
 
-            st.download_button(
-                label="📥 Scarica i risultati in Excel",
-                data=output,
-                file_name=f"risultati_{utente}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            for idx, r in risultati_df.iterrows():
+                domanda = r["Domanda"]
+                risposta = r["RispostaData"]
+                corretta = r["Corretta"]
+                esatta = "✔️" if r["Esatta"] else "❌"
+                lines = [
+                    f"Domanda: {domanda}",
+                    f"Risposta data: {risposta}",
+                    f"Corretta: {corretta}",
+                    f"Esatta? {esatta}"
+                ]
+                for line in lines:
+                    if y < 50:
+                        c.showPage()
+                        y = height - 50
+                    c.drawString(50, y, line)
+                    y -= 20
+                y -= 10
+
+            if y < 50:
+                c.showPage()
+                y = height - 50
+
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, y, f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
+            c.save()
+
+            # Invia PDF via Outlook
+            try:
+                import win32com.client as win32
+
+                outlook = win32.Dispatch('outlook.application')
+                mail = outlook.CreateItem(0)
+                mail.To = email
+                mail.Subject = f"Risultati quiz: {utente}"
+                mail.Body = f"Ciao,\n\nIn allegato trovi i risultati del quiz di {utente}.\n\nPunteggio: {punteggio} su {len(domande_selezionate)}\n\nCordiali saluti."
+                mail.Attachments.Add(os.path.abspath(pdf_path))
+                mail.Send()
+
+                st.success(f"📧 Email inviata correttamente a {email}")
+            except Exception as e:
+                st.error(f"Errore nell'invio dell'email: {e}")
+
+            # Per download locale
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label="📄 Scarica i risultati in PDF",
+                    data=f,
+                    file_name=pdf_path,
+                    mime="application/pdf"
+                )
 
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
