@@ -19,7 +19,7 @@ st.markdown("""
 
     .fixed-logo-container {
         position: fixed;
-        top: 0;
+        top: 18;
         left: 0;
         width: 100%;
         background-color: white;
