@@ -12,6 +12,8 @@ st.title("Quiz da Excel - Verifica Conoscenze")
 # Inizializza lo stato se non è ancora presente
 if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
+if "proseguito" not in st.session_state:
+    st.session_state["proseguito"] = False
 
 file_path = "questionario conoscenze infusion.xlsx"
 
@@ -38,7 +40,14 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     utente = st.text_input("Inserisci il tuo nome")
     email = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
-    if utente and email:
+    # Mostra il pulsante "Prosegui" se nome ed email sono compilati e non si è ancora proseguito
+    if utente and email and not st.session_state["proseguito"]:
+        st.markdown("<div style='text-align: center;'><br><br>", unsafe_allow_html=True)
+        if st.button("➡️ Prosegui"):
+            st.session_state["proseguito"] = True
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    if st.session_state["proseguito"]:
         risposte_date = []
         tutte_risposte_date = True
 
@@ -99,7 +108,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
             # Aggiungi il corpo del messaggio
             body = "In allegato trovi i risultati del quiz.\n\nCordiali saluti."
-            msg.attach(MIMEText(body, 'plain'))  # Ora dovrebbe funzionare
+            msg.attach(MIMEText(body, 'plain'))
 
             # Aggiungi il file Excel come allegato
             part = MIMEApplication(output.getvalue(), Name=f"risultati_{utente}.xlsx")
