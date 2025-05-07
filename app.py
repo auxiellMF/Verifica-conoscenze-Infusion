@@ -4,6 +4,7 @@ from io import BytesIO
 import random
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -26,8 +27,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     if "domande_selezionate" not in st.session_state:
         st.session_state["domande_selezionate"] = (
             df.groupby("principio", group_keys=False)
-            .apply(lambda x: x.sample(n=min(2, len(x))))
-            .reset_index(drop=True)
+            .apply(lambda x: x.sample(n=min(2, len(x)))).reset_index(drop=True)
         )
 
     domande_selezionate = st.session_state["domande_selezionate"]
@@ -93,30 +93,55 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             c.drawString(50, y, f"E-mail Mentor: {email}")
             y -= 30
 
+            # Funzione per scrivere testo che va a capo
+            def wrap_text(c, text, x, y, width):
+                # Imposta il font per il testo
+                c.setFont("Helvetica", 10)
+                lines = text.split('\n')
+                for line in lines:
+                    text_object = c.beginText(x, y)
+                    text_object.setFont("Helvetica", 10)
+                    text_object.setTextOrigin(x, y)
+                    text_object.textLines(line)
+                    c.drawText(text_object)
+                    y -= 16  # Spazio tra le righe
+                return y
+
+            # Cicla attraverso i risultati per ciascuna domanda
             for idx, r in risultati_df.iterrows():
                 domanda = r["Domanda"]
                 risposta = r["RispostaData"]
                 corretta = r["Corretta"]
-                esatta = "✔️" if r["Esatta"] else "❌"
-                lines = [
-                    f"Domanda: {domanda}",
-                    f"Risposta data: {risposta}",
-                    f"Corretta: {corretta}",
-                    f"Esatta? {esatta}"
-                ]
-                for line in lines:
-                    if y < 50:
-                        c.showPage()
-                        y = height - 50
-                    c.drawString(50, y, line)
-                    y -= 20
+                esatta = "Giusto" if r["Esatta"] else "Sbagliato"
+                
+                # Scrivere la domanda in grassetto
+                c.setFont("Helvetica-Bold", 12)
+                y = wrap_text(c, f"Domanda: {domanda}", 50, y, width - 100)
+                
+                # Scrivere la risposta
+                c.setFont("Helvetica", 10)
+                if r["Esatta"]:
+                    c.setFillColor(colors.green)  # Colore verde per la risposta corretta
+                    risposta_line = f"Risposta corretta: {risposta} ({esatta})"
+                else:
+                    c.setFillColor(colors.black)
+                    risposta_line = f"Risposta data: {risposta} ({esatta})"
+                
+                y = wrap_text(c, risposta_line, 50, y, width - 100)
+
+                # Scrivere se è giusto o sbagliato
+                c.setFont("Helvetica", 10)
+                y = wrap_text(c, f"{esatta}", 50, y, width - 100)
+
                 y -= 10  # spazio extra tra domande
 
+            # Aggiungi il punteggio finale
             if y < 50:
                 c.showPage()
                 y = height - 50
 
             c.setFont("Helvetica-Bold", 12)
+            c.setFillColor(colors.black)
             c.drawString(50, y, f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             c.save()
