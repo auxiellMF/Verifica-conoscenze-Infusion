@@ -14,7 +14,7 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 st.markdown("""
     <style>
     body {
-        padding-top: 45px; /* Aggiungi solo padding superiore */
+        padding-bottom: 45px; /* Aggiungi solo padding superiore */
     }
 
     .fixed-logo-container {
