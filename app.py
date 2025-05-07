@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st  
 import pandas as pd
 from io import BytesIO
 import random
@@ -13,7 +13,6 @@ st.set_page_config(page_title="Quiz auxiell", layout="centered")
 # Sticky logo in alto
 st.markdown("""
     <style>
-
     .fixed-logo-container {
         position: fixed;
         top: 0;
@@ -21,32 +20,31 @@ st.markdown("""
         width: 100%;
         background-color: white;
         text-align: center;
-        padding-top: 45px; /* Aggiungi solo padding superiore */
-        padding-bottom: 0px; /* Aggiungi solo padding inferiore */
+        padding-top: 45px;
+        padding-bottom: 0px;
         z-index: 1000;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.1); /* ombra leggera */
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
     }
-
     .fixed-logo-container img {
         max-height: 80px;
     }
-
     .fixed-logo-divider {
         border: none;
-        height: 1px; /* Altezza della riga */
-        background-color: #ccc; /* Colore della riga */
+        height: 1px;
+        background-color: #ccc;
         margin: 0;
-        padding: 0; /* Rimuoviamo eventuali spazi extra */
+        padding: 0;
+    }
+    .spacer {
+        height: 140px;
     }
     </style>
-
     <div class="fixed-logo-container">
         <img src="https://raw.githubusercontent.com/auxiellMF/prova/0e7fd16a41139ea306af35cc0f6dccb852403b86/auxiell_logobase.png" alt="Logo Auxiell">
         <hr class="fixed-logo-divider">
     </div>
+    <div class="spacer"></div>
 """, unsafe_allow_html=True)
-
-st.markdown("<div style='margin-top: 120px;'></div>", unsafe_allow_html=True)
 
 st.title("Verifica conoscenze infusion")
 
@@ -76,9 +74,22 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     domande_selezionate = st.session_state["domande_selezionate"]
 
     utente = st.text_input("Inserisci il tuo nome")
-    email = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
+    email_compilatore = st.text_input("Inserisci la tua email aziendale")
+    email_mentor = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
-    if utente and email and not st.session_state["proseguito"]:
+    errore_email = None
+
+    if email_compilatore and not email_compilatore.endswith("@auxiell.com"):
+        errore_email = "La tua email deve terminare con @auxiell.com"
+    elif email_mentor and not email_mentor.endswith("@auxiell.com"):
+        errore_email = "L'email del mentor deve terminare con @auxiell.com"
+    elif email_compilatore and email_mentor and email_compilatore == email_mentor:
+        errore_email = "La tua email e quella del mentor devono essere diverse"
+
+    if errore_email:
+        st.warning(errore_email)
+
+    if utente and email_compilatore and email_mentor and not errore_email and not st.session_state["proseguito"]:
         st.markdown("<div style='text-align: center;'><br><br>", unsafe_allow_html=True)
         if st.button("Prosegui"):
             st.session_state["proseguito"] = True
@@ -115,12 +126,10 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             risposte_date.append({
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
-                "RispostaData": risposta,
+                "Risposta data": risposta,
                 "Corretta": row["Corretta"],
-                "Esatta": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
+                "Risultato": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
             })
-
-        # 🔴 Barra di avanzamento rimossa
 
         if not st.session_state["submitted"]:
             if st.button("Invia Risposte"):
@@ -135,7 +144,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             risultati_df["Utente"] = utente
-            risultati_df["Email"] = email
+            risultati_df["Email"] = email_compilatore
 
             output = BytesIO()
             risultati_df.to_excel(output, index=False, engine='openpyxl')
@@ -143,10 +152,10 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
             msg = MIMEMultipart()
             msg['From'] = 'tuoindirizzo@gmail.com'
-            msg['To'] = email
+            msg['To'] = email_mentor
             msg['Subject'] = 'Risultati Quiz Verifica Conoscenze'
 
-            body = "In allegato trovi i risultati del quiz.\n\nCordiali saluti."
+            body = f"In allegato trovi i risultati del quiz compilati da {utente} ({email_compilatore}).\n\nCordiali saluti."
             msg.attach(MIMEText(body, 'plain'))
 
             part = MIMEApplication(output.getvalue(), Name=f"risultati_{utente}.xlsx")
@@ -158,7 +167,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                     server.starttls()
                     server.login('infusionauxiell@gmail.com', 'ubrwqtcnbyjiqach')
                     server.sendmail(msg['From'], msg['To'], msg.as_string())
-                st.success(f"Email inviata con successo a {email}")
+                st.success(f"Email inviata con successo a {email_mentor}")
             except Exception as e:
                 st.error(f"Errore nell'invio dell'email: {str(e)}")
 
