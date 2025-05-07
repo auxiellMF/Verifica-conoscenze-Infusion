@@ -140,7 +140,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
         if st.session_state["submitted"]:
             risultati_df = pd.DataFrame(risposte_date)
-            punteggio = risultati_df["Esatta"].sum()
+            punteggio = risultati_df["Risultato"].sum()
             st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             risultati_df["Utente"] = utente
