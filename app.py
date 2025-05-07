@@ -1,6 +1,7 @@
 import streamlit as st 
 import pandas as pd
 from io import BytesIO
+import random
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
@@ -13,8 +14,10 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
+# Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
 
+    # Estrai 2 domande casuali per ogni categoria
     domande_selezionate = (
         df.groupby("principio", group_keys=False)
         .apply(lambda x: x.sample(n=min(2, len(x)), random_state=42))
@@ -25,55 +28,55 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
     if utente:
         risposte_date = []
-        punteggio = 0
+        tutte_risposte_date = True  # Flag per controllare se tutte le risposte sono state date
+
+        st.write("### Rispondi alle seguenti domande:")
 
         for idx, row in domande_selezionate.iterrows():
-            st.markdown(f"### {row['Domanda']}")
+            st.markdown(f"**{row['Domanda']}**")
 
-            opzioni = ["-- Seleziona un'opzione --"]
+            opzioni = []
             for col in df.columns:
                 if "opzione" in col.lower() and pd.notna(row[col]):
                     opzioni.append(str(row[col]))
 
-            key_radio = f"risposta_{idx}"
             risposta = st.radio(
-                f"Argomento: {row['principio']}",
-                opzioni,
-                key=key_radio,
-                index=0
+                f"Argomento: {row['principio']}", 
+                opzioni, 
+                key=idx, 
+                index=None  # Nessuna preselezione
             )
 
-            # Pulsante "Cancella risposta"
-            if st.button("🧹 Cancella risposta", key=f"cancella_{idx}"):
-                st.session_state[key_radio] = "-- Seleziona un'opzione --"
-
-            corrette = [c.strip() for c in str(row["Corretta"]).split(";")]
-            esatta = risposta.strip() in corrette if risposta != "-- Seleziona un'opzione --" else False
+            if risposta is None:
+                tutte_risposte_date = False
 
             risposte_date.append({ 
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
-                "RispostaData": risposta if risposta != "-- Seleziona un'opzione --" else "",
+                "RispostaData": risposta,
                 "Corretta": row["Corretta"],
-                "Esatta": esatta
+                "Esatta": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
             })
 
         if st.button("Invia Risposte"):
-            risultati_df = pd.DataFrame(risposte_date)
-            punteggio = risultati_df["Esatta"].sum()
-            st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
+            if not tutte_risposte_date:
+                st.warning("⚠️ Per favore rispondi a tutte le domande prima di inviare.")
+            else:
+                risultati_df = pd.DataFrame(risposte_date)
+                punteggio = risultati_df["Esatta"].sum()
+                st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
-            risultati_df["Utente"] = utente
+                risultati_df["Utente"] = utente
 
-            output = BytesIO()
-            risultati_df.to_excel(output, index=False, engine='openpyxl')
-            output.seek(0)
+                output = BytesIO()
+                risultati_df.to_excel(output, index=False, engine='openpyxl')
+                output.seek(0)
 
-            st.download_button(
-                label="📥 Scarica i risultati in Excel",
-                data=output,
-                file_name=f"risultati_{utente}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+                st.download_button(
+                    label="📥 Scarica i risultati in Excel",
+                    data=output,
+                    file_name=f"risultati_{utente}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 else:
     st.error("Il file Excel deve contenere le colonne: 'principio', 'Domanda', opzioni e 'Corretta'")
