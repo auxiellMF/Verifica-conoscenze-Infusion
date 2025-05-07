@@ -43,7 +43,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
     # Mostra il pulsante "Prosegui" se nome ed email sono compilati e non si è ancora proseguito
     if utente and email and not st.session_state["proseguito"]:
         st.markdown("<div style='text-align: center;'><br><br>", unsafe_allow_html=True)
-        if st.button("➡️ Prosegui"):
+        if st.button("Prosegui"):
             st.session_state["proseguito"] = True
         st.markdown("</div>", unsafe_allow_html=True)
 
