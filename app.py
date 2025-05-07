@@ -21,8 +21,8 @@ st.markdown("""
         width: 100%;
         background-color: white;
         text-align: center;
-        padding-top: -90px; /* Aggiungi solo padding superiore */
-        padding-bottom: -50px; /* Aggiungi solo padding inferiore */
+        padding-top: 45px; /* Aggiungi solo padding superiore */
+        padding-bottom: 0px; /* Aggiungi solo padding inferiore */
         z-index: 1000;
         box-shadow: 0px 2px 4px rgba(0,0,0,0.1); /* ombra leggera */
     }
