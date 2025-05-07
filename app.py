@@ -31,7 +31,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-
 st.title("Quiz da Excel - Verifica Conoscenze")
 
 if "submitted" not in st.session_state:
@@ -64,7 +63,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
 
     if utente and email and not st.session_state["proseguito"]:
         st.markdown("<div style='text-align: center;'><br><br>", unsafe_allow_html=True)
-        if st.button("➡️ Prosegui"):
+        if st.button("Prosegui"):
             st.session_state["proseguito"] = True
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -104,13 +103,12 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 "Esatta": risposta in [c.strip() for c in str(row["Corretta"]).split(";")] if risposta else False
             })
 
-        progresso = num_risposte / len(domande_selezionate)
-        st.progress(progresso, text=f"{num_risposte} di {len(domande_selezionate)} domande completate")
+        # 🔴 Barra di avanzamento rimossa
 
         if not st.session_state["submitted"]:
             if st.button("Invia Risposte"):
                 if not tutte_risposte_date:
-                    st.warning("⚠️ Per favore rispondi a tutte le domande prima di inviare.")
+                    st.warning("Per favore rispondi a tutte le domande prima di inviare.")
                 else:
                     st.session_state["submitted"] = True
 
