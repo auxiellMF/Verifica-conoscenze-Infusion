@@ -110,7 +110,7 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             try:
                 with smtplib.SMTP('smtp.gmail.com', 587) as server:
                     server.starttls()
-                    server.login('c07275691@gmail.com', 'aikdgwibyjhtwffn')  # Usa la password per l'app
+                    server.login('infusionauxiell@gmail.com', 'ubrwqtcnbyjiqach')  # Usa la password per l'app
                     server.sendmail(msg['From'], msg['To'], msg.as_string())
                 st.success(f"Email inviata con successo a {email}")
             except Exception as e:
