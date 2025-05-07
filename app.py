@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+from io import BytesIO
 st.title("Quiz da Excel - Verifica Conoscenze")
 
 # Caricamento automatico del file Excel dal repository
@@ -52,7 +52,6 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
             st.success(f"Punteggio finale: {punteggio} su {len(df)}")
 
             risultati_df["Utente"] = utente
-          from io import BytesIO
 
 # Salva il file in memoria
 output = BytesIO()
