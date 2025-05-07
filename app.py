@@ -46,7 +46,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-
+st.markdown("<div style='margin-top: 120px;'></div>", unsafe_allow_html=True)
 
 st.title("Verifica conoscenze infusion")
 
