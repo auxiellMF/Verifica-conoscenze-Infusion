@@ -1,11 +1,10 @@
-
-import streamlit as st
+import streamlit as st 
 import pandas as pd
-from io import BytesIO  # 👈 Import per generare file in memoria
+from io import BytesIO
+import random
 
 st.title("Quiz da Excel - Verifica Conoscenze")
 
-# Caricamento automatico del file Excel dal repository
 file_path = "questionario conoscenze infusion.xlsx"
 
 try:
@@ -17,29 +16,33 @@ except FileNotFoundError:
 
 # Verifica colonne essenziali
 if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.columns:
+    
+    # ✨ Estrai 2 domande casuali per ogni categoria ("principio")
+    domande_selezionate = (
+        df.groupby("principio", group_keys=False)
+        .apply(lambda x: x.sample(n=min(2, len(x)), random_state=42))  # 2 domande per categoria
+    ).reset_index(drop=True)
+
     utente = st.text_input("Inserisci il tuo nome")
 
     if utente:
         risposte_date = []
         punteggio = 0
 
-        for idx, row in df.iterrows():
+        for idx, row in domande_selezionate.iterrows():
             st.markdown(f"### {row['Domanda']}")
 
-            # Estrai dinamicamente tutte le opzioni non vuote
             opzioni = []
             for col in df.columns:
                 if "opzione" in col.lower() and pd.notna(row[col]):
                     opzioni.append(str(row[col]))
 
-            # Mostra le opzioni
             risposta = st.radio(f"Argomento: {row['principio']}", opzioni, key=idx)
 
-            # Supporta più risposte corrette (es: "A;B;C")
             corrette = [c.strip() for c in str(row["Corretta"]).split(";")]
             esatta = risposta.strip() in corrette
 
-            risposte_date.append({
+            risposte_date.append({ 
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
                 "RispostaData": risposta,
@@ -47,15 +50,13 @@ if "principio" in df.columns and "Domanda" in df.columns and "Corretta" in df.co
                 "Esatta": esatta
             })
 
-        # Mostra punteggio e pulsante di download
         if st.button("Invia Risposte"):
             risultati_df = pd.DataFrame(risposte_date)
             punteggio = risultati_df["Esatta"].sum()
-            st.success(f"Punteggio finale: {punteggio} su {len(df)}")
+            st.success(f"Punteggio finale: {punteggio} su {len(domande_selezionate)}")
 
             risultati_df["Utente"] = utente
 
-            # Salva in memoria e offri download
             output = BytesIO()
             risultati_df.to_excel(output, index=False, engine='openpyxl')
             output.seek(0)
