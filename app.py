@@ -44,13 +44,13 @@ st.markdown("""
 
 st.title("Verifica conoscenze infusion")
 
-# Inizializza stato
+# Stato
 if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
 if "proseguito" not in st.session_state:
     st.session_state["proseguito"] = False
 
-# Caricamento file
+# Caricamento Excel
 file_path = "questionario conoscenze infusion.xlsx"
 try:
     df = pd.read_excel(file_path)
@@ -59,7 +59,7 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
-# Controllo colonne obbligatorie
+# Verifica colonne necessarie
 required_cols = ["Azienda", "principio", "Domanda", "Corretta", "opzione 1"]
 missing = [col for col in required_cols if col not in df.columns]
 if missing:
@@ -72,7 +72,7 @@ if not option_cols:
     st.error("Nessuna colonna di opzione trovata.")
     st.stop()
 
-# Selezione casuale domande per principio
+# Domande casuali per principio
 if "domande_selezionate" not in st.session_state:
     st.session_state["domande_selezionate"] = (
         df.groupby("principio", group_keys=False)
@@ -98,8 +98,8 @@ elif email_compilatore and email_mentor and email_compilatore == email_mentor:
 if errore_email:
     st.warning(errore_email)
 
-# Pulsante “Prosegui”
-if azienda_scelta and utente and email_compilatore and email_mentor and not errore_email and not st.session_state["proseguito"]:
+# Pulsante Prosegui
+if utente and email_compilatore and email_mentor and not errore_email and not st.session_state["proseguito"]:
     st.markdown("<div style='text-align: center; margin-top:20px;'><br>", unsafe_allow_html=True)
     if st.button("Prosegui"):
         st.session_state["proseguito"] = True
@@ -122,9 +122,8 @@ if st.session_state["proseguito"]:
                 "Tipo": "aperta",
                 "Azienda": azienda_scelta,
                 "Utente": utente,
-                "Email": email_compilatore,
-                "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
+                "Argomento": row["principio"],
                 "Risposta": ans,
                 "Corretta": None,
                 "Esatta": None
@@ -144,20 +143,17 @@ if st.session_state["proseguito"]:
                 "Tipo": "chiusa",
                 "Azienda": azienda_scelta,
                 "Utente": utente,
-                "Email": email_compilatore,
-                "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
+                "Argomento": row["principio"],
                 "Risposta": sel,
                 "Corretta": row["Corretta"],
                 "Esatta": is_corr
             })
 
-    # Invio risposte
     if not st.session_state["submitted"]:
         if st.button("Invia Risposte"):
             st.session_state["submitted"] = True
 
-    # Calcolo punteggio e invio email
     if st.session_state["submitted"]:
         df_r = pd.DataFrame(risposte)
         chiuse = df_r[df_r["Tipo"] == "chiusa"]
@@ -166,17 +162,19 @@ if st.session_state["proseguito"]:
         perc = int(n_cor / n_tot * 100) if n_tot else 0
         st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
-        # Salva Excel
+        df_r["Email"] = email_compilatore
+        df_r["Punteggio"] = f"{perc}%"
         buf = BytesIO()
         df_r.to_excel(buf, index=False, engine="openpyxl")
         buf.seek(0)
 
-        # Costruisci email
+        # Email
         msg = MIMEMultipart()
-        msg["From"] = "tuoindirizzo@gmail.com"
+        msg["From"] = "infusionauxiell@gmail.com"
         msg["To"] = email_mentor
-        msg["Subject"] = "Risultati Quiz Verifica Conoscenze"
-        msg.attach(MIMEText(f"In allegato i risultati di {utente} ({email_compilatore}), azienda: {azienda_scelta}.", "plain"))
+        msg["Subject"] = f"Risultati Quiz - {utente}"
+        body = f"Risultati di {utente} ({email_compilatore}) in allegato.\nPunteggio: {perc}%"
+        msg.attach(MIMEText(body, "plain"))
         attachment = MIMEApplication(buf.getvalue(), Name=f"risultati_{utente}.xlsx")
         attachment["Content-Disposition"] = f'attachment; filename="risultati_{utente}.xlsx"'
         msg.attach(attachment)
@@ -184,8 +182,8 @@ if st.session_state["proseguito"]:
         try:
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
-                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")  # Sostituire con credenziali reali in modo sicuro
+                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")
                 server.send_message(msg)
             st.success(f"Email inviata a {email_mentor}")
         except Exception as e:
-            st.error(f"Errore invio email: {e}")
+            st.error(f"Errore durante l'invio email: {e}")
