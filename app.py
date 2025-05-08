@@ -49,9 +49,11 @@ if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
 if "proseguito" not in st.session_state:
     st.session_state["proseguito"] = False
+if "azienda_scelta" not in st.session_state:
+    st.session_state["azienda_scelta"] = None
 
 # Caricamento Excel
-file_path = "questionario conoscenze infusion"
+file_path = "questionario conoscenze infusion.xlsx"
 try:
     df = pd.read_excel(file_path)
     st.success("Domande pronte!")
@@ -72,17 +74,28 @@ if not option_cols:
     st.error("Nessuna colonna di opzione trovata.")
     st.stop()
 
-# Domande casuali per principio
+# Step 1: selezione azienda
+if st.session_state["azienda_scelta"] is None:
+    aziende_disponibili = sorted(df["Azienda"].dropna().unique())
+    azienda_scelta = st.selectbox("Seleziona la tua azienda", aziende_disponibili)
+    if st.button("Conferma azienda"):
+        st.session_state["azienda_scelta"] = azienda_scelta
+    st.stop()
+
+# Step 2: filtra domande in base all'azienda
+azienda_scelta = st.session_state["azienda_scelta"]
+df_filtrato = df[df["Azienda"] == azienda_scelta]
+
+# Selezione domande solo una volta
 if "domande_selezionate" not in st.session_state:
     st.session_state["domande_selezionate"] = (
-        df.groupby("principio", group_keys=False)
-          .apply(lambda x: x.sample(n=min(2, len(x))))
-          .reset_index(drop=True)
+        df_filtrato.groupby("principio", group_keys=False)
+                   .apply(lambda x: x.sample(n=min(2, len(x))))
+                   .reset_index(drop=True)
     )
 domande = st.session_state["domande_selezionate"]
 
-# Input utente
-azienda_scelta = st.selectbox("Seleziona la tua azienda", sorted(df["Azienda"].dropna().unique()))
+# Step 3: input utente
 utente = st.text_input("Inserisci il tuo nome")
 email_compilatore = st.text_input("Inserisci la tua email aziendale")
 email_mentor = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
@@ -105,7 +118,7 @@ if utente and email_compilatore and email_mentor and not errore_email and not st
         st.session_state["proseguito"] = True
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Quiz
+# Step 4: Quiz
 if st.session_state["proseguito"]:
     risposte = []
     st.write("### Rispondi alle seguenti domande:")
