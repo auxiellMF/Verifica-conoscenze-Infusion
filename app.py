@@ -167,9 +167,11 @@ if st.session_state["proseguito"]:
                 "Esatta": is_corr
             })
 
-    if not st.session_state["submitted"]:
+     if not st.session_state["submitted"]:
         if st.button("Invia Risposte"):
             st.session_state["submitted"] = True
+            st.experimental_rerun()
+
 
     if st.session_state["submitted"]:
         df_r = pd.DataFrame(risposte)
