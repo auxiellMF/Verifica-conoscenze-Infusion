@@ -176,7 +176,7 @@ if st.session_state["proseguito"]:
     if not st.session_state["submitted"]:
         if st.button("Invia Risposte"):
             st.session_state["submitted"] = True
-            st.experimental_rerun()
+            st.rerun()
 
     if st.session_state["submitted"]:
         df_r = pd.DataFrame(risposte)
