@@ -52,6 +52,8 @@ if "proseguito" not in st.session_state:
     st.session_state["proseguito"] = False
 if "azienda_scelta" not in st.session_state:
     st.session_state["azienda_scelta"] = None
+if "email_inviata" not in st.session_state:
+    st.session_state["email_inviata"] = False
 
 # Caricamento Excel
 file_path = "questionario conoscenze infusion.xlsx"
@@ -173,44 +175,42 @@ if st.session_state["proseguito"]:
             })
 
     # Pulsante invio con blocco immediato
-if "submitted" not in st.session_state:
-    st.session_state["submitted"] = False
+    submit_clicked = st.button("Invia Risposte")
 
-submit_clicked = st.button("Invia Risposte")
+    if submit_clicked:
+        st.session_state["submitted"] = True
+        st.experimental_rerun()
 
-if submit_clicked:
-    st.session_state["submitted"] = True
-    st.experimental_rerun()
-
+# Risultati e invio email
 if st.session_state["submitted"]:
     st.success("Risposte inviate.")
+    
+    df_r = pd.DataFrame(risposte)
+    chiuse = df_r[df_r["Tipo"] == "chiusa"]
+    n_tot = len(chiuse)
+    n_cor = int(chiuse["Esatta"].sum()) if n_tot else 0
+    perc = int(n_cor / n_tot * 100) if n_tot else 0
+    st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
-    if st.session_state["submitted"]:
-        df_r = pd.DataFrame(risposte)
-        chiuse = df_r[df_r["Tipo"] == "chiusa"]
-        n_tot = len(chiuse)
-        n_cor = int(chiuse["Esatta"].sum()) if n_tot else 0
-        perc = int(n_cor / n_tot * 100) if n_tot else 0
-        st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
+    # Creazione file Excel
+    data_test = datetime.now().strftime("%d/%m/%Y")
+    info = pd.DataFrame([{
+        "Nome": utente,
+        "Data": data_test,
+        "Punteggio": f"{perc}%",
+        "Azienda": azienda_scelta
+    }])
+    buf = BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        info.to_excel(writer, index=False, sheet_name="Risposte", startrow=0)
+        pd.DataFrame([], columns=[""]).to_excel(writer, index=False, sheet_name="Risposte", startrow=2)
+        df_r["Email"] = email_compilatore
+        df_r["Punteggio"] = f"{perc}%"
+        df_r.to_excel(writer, index=False, sheet_name="Risposte", startrow=3)
+    buf.seek(0)
 
-        # Creazione file Excel con due tabelle
-        data_test = datetime.now().strftime("%d/%m/%Y")
-        info = pd.DataFrame([{
-            "Nome": utente,
-            "Data": data_test,
-            "Punteggio": f"{perc}%",
-            "Azienda": azienda_scelta
-        }])
-        buf = BytesIO()
-        with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-            info.to_excel(writer, index=False, sheet_name="Risposte", startrow=0)
-            pd.DataFrame([], columns=[""]).to_excel(writer, index=False, sheet_name="Risposte", startrow=2)
-            df_r["Email"] = email_compilatore
-            df_r["Punteggio"] = f"{perc}%"
-            df_r.to_excel(writer, index=False, sheet_name="Risposte", startrow=3)
-        buf.seek(0)
-
-        # Email
+    # Invio email solo se non già inviata
+    if not st.session_state["email_inviata"]:
         msg = MIMEMultipart()
         msg["From"] = "infusionauxiell@gmail.com"
         msg["To"] = email_mentor
@@ -227,5 +227,6 @@ if st.session_state["submitted"]:
                 server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")
                 server.send_message(msg)
             st.success(f"Email inviata a {email_mentor}")
+            st.session_state["email_inviata"] = True
         except Exception as e:
             st.error(f"Errore durante l'invio email: {e}")
