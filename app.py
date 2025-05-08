@@ -43,7 +43,7 @@ st.markdown("""
     <div class="spacer"></div>
 """, unsafe_allow_html=True)
 
-st.title("Verifica Video New Entry")
+st.title("Verifica competenze Infusion")
 
 # Stato iniziale
 if "submitted" not in st.session_state:
