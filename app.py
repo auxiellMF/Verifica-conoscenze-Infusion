@@ -103,12 +103,20 @@ email_mentor = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
 # Validazione email
 errore_email = None
-if email_compilatore and not email_compilatore.endswith("@auxiell.com"):
-    errore_email = "La tua email deve terminare con @auxiell.com"
-elif email_mentor and not email_mentor.endswith("@auxiell.com"):
-    errore_email = "L'email del mentor deve terminare con @auxiell.com"
+dominio_atteso = {
+    "auxiell": "@auxiell.com",
+    "euxilia": "@euxilia.com",
+    "xva": "@xva-services.com"
+}
+dominio = dominio_atteso.get(azienda_scelta.lower(), "@auxiell.com")
+
+if email_compilatore and not email_compilatore.endswith(dominio):
+    errore_email = f"La tua email deve terminare con {dominio}"
+elif email_mentor and not email_mentor.endswith(dominio):
+    errore_email = f"L'email del mentor deve terminare con {dominio}"
 elif email_compilatore and email_mentor and email_compilatore == email_mentor:
     errore_email = "La tua email e quella del mentor devono essere diverse"
+
 if errore_email:
     st.warning(errore_email)
 
@@ -189,7 +197,7 @@ if st.session_state["proseguito"]:
         buf = BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as writer:
             info.to_excel(writer, index=False, sheet_name="Risposte", startrow=0)
-            pd.DataFrame([], columns=[""]).to_excel(writer, index=False, sheet_name="Risposte", startrow=2)  # Riga vuota
+            pd.DataFrame([], columns=[""]).to_excel(writer, index=False, sheet_name="Risposte", startrow=2)
             df_r["Email"] = email_compilatore
             df_r["Punteggio"] = f"{perc}%"
             df_r.to_excel(writer, index=False, sheet_name="Risposte", startrow=3)
