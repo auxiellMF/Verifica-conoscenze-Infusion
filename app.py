@@ -8,7 +8,7 @@ from email.mime.text import MIMEText
 
 st.set_page_config(page_title="Quiz auxiell", layout="centered")
 
-# Sticky logo in alto
+# Logo fisso
 st.markdown("""
     <style>
     .fixed-logo-container {
@@ -59,19 +59,20 @@ except FileNotFoundError:
     st.error(f"File non trovato: {file_path}")
     st.stop()
 
-# Trova colonne opzione*
-option_cols = [c for c in df.columns if c.lower().strip().startswith("opzione")]
-if not option_cols:
-    st.error("Nessuna colonna di opzione trovata: assicurati di avere colonne che iniziano con 'opzione'.")
+# Controllo colonne obbligatorie
+required_cols = ["Azienda", "principio", "Domanda", "Corretta", "opzione 1"]
+missing = [col for col in required_cols if col not in df.columns]
+if missing:
+    st.error(f"Mancano le colonne obbligatorie: {', '.join(missing)}")
     st.stop()
 
-# Controllo colonne obbligatorie
-for col in ("principio", "Domanda", "Corretta", "opzione 1"):
-    if col not in df.columns:
-        st.error(f"Manca la colonna obbligatoria: '{col}'")
-        st.stop()
+# Colonne opzione
+option_cols = [c for c in df.columns if c.lower().strip().startswith("opzione")]
+if not option_cols:
+    st.error("Nessuna colonna di opzione trovata.")
+    st.stop()
 
-# Selezione casuale delle domande
+# Selezione casuale domande per principio
 if "domande_selezionate" not in st.session_state:
     st.session_state["domande_selezionate"] = (
         df.groupby("principio", group_keys=False)
@@ -80,7 +81,8 @@ if "domande_selezionate" not in st.session_state:
     )
 domande = st.session_state["domande_selezionate"]
 
-# Input utente e email
+# Input utente
+azienda_scelta = st.selectbox("Seleziona la tua azienda", sorted(df["Azienda"].dropna().unique()))
 utente = st.text_input("Inserisci il tuo nome")
 email_compilatore = st.text_input("Inserisci la tua email aziendale")
 email_mentor = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
@@ -97,7 +99,7 @@ if errore_email:
     st.warning(errore_email)
 
 # Pulsante “Prosegui”
-if utente and email_compilatore and email_mentor and not errore_email and not st.session_state["proseguito"]:
+if azienda_scelta and utente and email_compilatore and email_mentor and not errore_email and not st.session_state["proseguito"]:
     st.markdown("<div style='text-align: center; margin-top:20px;'><br>", unsafe_allow_html=True)
     if st.button("Prosegui"):
         st.session_state["proseguito"] = True
@@ -110,7 +112,6 @@ if st.session_state["proseguito"]:
 
     for idx, row in domande.iterrows():
         st.markdown(f"**{row['Domanda']}**")
-        # Domanda aperta se 'opzione 1' è NaN
         if pd.isna(row["opzione 1"]):
             ans = st.text_input(
                 f"Risposta libera ({row['principio']})",
@@ -119,6 +120,9 @@ if st.session_state["proseguito"]:
             )
             risposte.append({
                 "Tipo": "aperta",
+                "Azienda": azienda_scelta,
+                "Utente": utente,
+                "Email": email_compilatore,
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
                 "Risposta": ans,
@@ -138,6 +142,9 @@ if st.session_state["proseguito"]:
             is_corr = sel in corrette
             risposte.append({
                 "Tipo": "chiusa",
+                "Azienda": azienda_scelta,
+                "Utente": utente,
+                "Email": email_compilatore,
                 "Argomento": row["principio"],
                 "Domanda": row["Domanda"],
                 "Risposta": sel,
@@ -159,9 +166,7 @@ if st.session_state["proseguito"]:
         perc = int(n_cor / n_tot * 100) if n_tot else 0
         st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
-        # Prepara Excel
-        df_r["Utente"] = utente
-        df_r["Email"] = email_compilatore
+        # Salva Excel
         buf = BytesIO()
         df_r.to_excel(buf, index=False, engine="openpyxl")
         buf.seek(0)
@@ -171,7 +176,7 @@ if st.session_state["proseguito"]:
         msg["From"] = "tuoindirizzo@gmail.com"
         msg["To"] = email_mentor
         msg["Subject"] = "Risultati Quiz Verifica Conoscenze"
-        msg.attach(MIMEText(f"In allegato i risultati di {utente} ({email_compilatore}).", "plain"))
+        msg.attach(MIMEText(f"In allegato i risultati di {utente} ({email_compilatore}), azienda: {azienda_scelta}.", "plain"))
         attachment = MIMEApplication(buf.getvalue(), Name=f"risultati_{utente}.xlsx")
         attachment["Content-Disposition"] = f'attachment; filename="risultati_{utente}.xlsx"'
         msg.attach(attachment)
@@ -179,7 +184,7 @@ if st.session_state["proseguito"]:
         try:
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
-                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")
+                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")  # Sostituire con credenziali reali in modo sicuro
                 server.send_message(msg)
             st.success(f"Email inviata a {email_mentor}")
         except Exception as e:
