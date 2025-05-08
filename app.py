@@ -179,7 +179,7 @@ if st.session_state["proseguito"]:
 
     if submit_clicked:
         st.session_state["submitted"] = True
-        st.experimental_rerun()
+        st.rerun()
 
 # Risultati e invio email
 if st.session_state["submitted"]:
