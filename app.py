@@ -51,7 +51,7 @@ if "proseguito" not in st.session_state:
     st.session_state["proseguito"] = False
 
 # Caricamento file
-file_path = "questionario conoscenze infusion.xlsx"
+file_path = "questionario conoscenze infusion"
 try:
     df = pd.read_excel(file_path)
     st.success("Domande pronte!")
