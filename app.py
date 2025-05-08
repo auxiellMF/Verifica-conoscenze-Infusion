@@ -6,9 +6,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 from datetime import datetime
-import openpyxl
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl import Workbook
 
 st.set_page_config(page_title="Quiz auxiell", layout="centered")
 
@@ -48,7 +45,7 @@ st.markdown("""
 
 st.title("Verifica conoscenze infusion")
 
-# Stato
+# Stato iniziale
 if "submitted" not in st.session_state:
     st.session_state["submitted"] = False
 if "proseguito" not in st.session_state:
@@ -86,11 +83,11 @@ if st.session_state["azienda_scelta"] is None:
         st.session_state["azienda_scelta"] = azienda_scelta
     st.stop()
 
-# Step 2: filtra domande in base all'azienda
+# Step 2: filtro domande per azienda
 azienda_scelta = st.session_state["azienda_scelta"]
 df_filtrato = df[df["Azienda"] == azienda_scelta]
 
-# Selezione domande solo una volta
+# Selezione domande per argomento
 if "domande_selezionate" not in st.session_state:
     st.session_state["domande_selezionate"] = (
         df_filtrato.groupby("principio", group_keys=False)
@@ -167,11 +164,11 @@ if st.session_state["proseguito"]:
                 "Esatta": is_corr
             })
 
-     if not st.session_state["submitted"]:
+    # Pulsante invio con blocco immediato
+    if not st.session_state["submitted"]:
         if st.button("Invia Risposte"):
             st.session_state["submitted"] = True
             st.experimental_rerun()
-
 
     if st.session_state["submitted"]:
         df_r = pd.DataFrame(risposte)
@@ -181,34 +178,24 @@ if st.session_state["proseguito"]:
         perc = int(n_cor / n_tot * 100) if n_tot else 0
         st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
-        df_r["Email"] = email_compilatore
-        df_r["Punteggio"] = f"{perc}%"
-
-        # === CREAZIONE FILE EXCEL CON TABELLA RIASSUNTIVA ===
+        # Creazione file Excel con due tabelle
+        data_test = datetime.now().strftime("%d/%m/%Y")
+        info = pd.DataFrame([{
+            "Nome": utente,
+            "Data": data_test,
+            "Punteggio": f"{perc}%",
+            "Azienda": azienda_scelta
+        }])
         buf = BytesIO()
-        wb = Workbook()
-        ws = wb.active
-
-        # Riga di intestazione
-        ws.append(["Nome", "Data Esecuzione", "Punteggio", "Azienda"])
-        # Riga dei valori
-        ws.append([
-            utente,
-            datetime.today().strftime("%d/%m/%Y"),
-            f"{perc}%",
-            azienda_scelta
-        ])
-        # Riga vuota
-        ws.append([])
-
-        # Tabella dettagliata delle risposte
-        for r in dataframe_to_rows(df_r, index=False, header=True):
-            ws.append(r)
-
-        wb.save(buf)
+        with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+            info.to_excel(writer, index=False, sheet_name="Risposte", startrow=0)
+            pd.DataFrame([], columns=[""]).to_excel(writer, index=False, sheet_name="Risposte", startrow=2)  # Riga vuota
+            df_r["Email"] = email_compilatore
+            df_r["Punteggio"] = f"{perc}%"
+            df_r.to_excel(writer, index=False, sheet_name="Risposte", startrow=3)
         buf.seek(0)
 
-        # === EMAIL ===
+        # Email
         msg = MIMEMultipart()
         msg["From"] = "infusionauxiell@gmail.com"
         msg["To"] = email_mentor
