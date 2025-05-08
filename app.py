@@ -5,6 +5,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
+from datetime import datetime
+import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import Workbook
 
 st.set_page_config(page_title="Quiz auxiell", layout="centered")
 
@@ -177,11 +181,32 @@ if st.session_state["proseguito"]:
 
         df_r["Email"] = email_compilatore
         df_r["Punteggio"] = f"{perc}%"
+
+        # === CREAZIONE FILE EXCEL CON TABELLA RIASSUNTIVA ===
         buf = BytesIO()
-        df_r.to_excel(buf, index=False, engine="openpyxl")
+        wb = Workbook()
+        ws = wb.active
+
+        # Riga di intestazione
+        ws.append(["Nome", "Data Esecuzione", "Punteggio", "Azienda"])
+        # Riga dei valori
+        ws.append([
+            utente,
+            datetime.today().strftime("%d/%m/%Y"),
+            f"{perc}%",
+            azienda_scelta
+        ])
+        # Riga vuota
+        ws.append([])
+
+        # Tabella dettagliata delle risposte
+        for r in dataframe_to_rows(df_r, index=False, header=True):
+            ws.append(r)
+
+        wb.save(buf)
         buf.seek(0)
 
-        # Email
+        # === EMAIL ===
         msg = MIMEMultipart()
         msg["From"] = "infusionauxiell@gmail.com"
         msg["To"] = email_mentor
