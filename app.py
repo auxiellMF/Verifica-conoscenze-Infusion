@@ -83,26 +83,28 @@ if st.session_state["azienda_scelta"] is None:
     azienda_scelta = st.selectbox("Seleziona la tua azienda", aziende_disponibili)
     if st.button("Conferma azienda"):
         st.session_state["azienda_scelta"] = azienda_scelta
-        # Applica tema scuro dinamicamente
-        st.markdown("""
-            <style>
-            body, .stApp {
-                background-color: #000 !important;
-                color: white !important;
-            }
-            .css-1v0mbdj, .stTextInput input, .stSelectbox div, .stRadio div, .stMultiSelect div {
-                background-color: #333 !important;
-                color: white !important;
-            }
-            label, .stRadio label, .stMultiSelect label {
-                color: white !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
     st.stop()
 
 # Step 2: filtro domande per azienda
 azienda_scelta = st.session_state["azienda_scelta"]
+
+# Applica tema scuro ogni volta se l'azienda è stata scelta
+st.markdown("""
+    <style>
+    body, .stApp {
+        background-color: #000 !important;
+        color: white !important;
+    }
+    .css-1v0mbdj, .stTextInput input, .stSelectbox div, .stRadio div, .stMultiSelect div {
+        background-color: #333 !important;
+        color: white !important;
+    }
+    label, .stRadio label, .stMultiSelect label {
+        color: white !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 df_filtrato = df[df["Azienda"] == azienda_scelta]
 
 if "domande_selezionate" not in st.session_state:
