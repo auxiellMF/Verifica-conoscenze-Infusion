@@ -234,7 +234,7 @@ if st.session_state["submitted"]:
         try:
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
-                server.login("infusionauxiell@gmail.com", "TUA_PASSWORD_PER_APP")
+                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")
                 server.send_message(msg)
             st.success(f"Email inviata a {email_mentor}")
             st.session_state["email_inviata"] = True
