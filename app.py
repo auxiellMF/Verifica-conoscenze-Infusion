@@ -154,34 +154,45 @@ if st.session_state["proseguito"]:
             })
         else:
             opts = [str(row[c]) for c in option_cols if pd.notna(row[c])]
-            sel = st.radio(
-                f"Argomento: {row['principio']}",
-                opts,
-                key=idx,
-                index=None,
-                disabled=st.session_state["submitted"]
-            )
             corrette = [c.strip() for c in str(row["Corretta"]).split(";")]
-            is_corr = sel in corrette
+
+            if len(corrette) > 1:
+                sel = st.multiselect(
+                    f"(Risposte multiple) Argomento: {row['principio']}",
+                    opts,
+                    key=idx,
+                    default=[],
+                    disabled=st.session_state["submitted"]
+                )
+                is_corr = set(sel) == set(corrette)
+            else:
+                sel = st.radio(
+                    f"Argomento: {row['principio']}",
+                    opts,
+                    key=idx,
+                    index=None,
+                    disabled=st.session_state["submitted"]
+                )
+                is_corr = sel == corrette[0]
+
             risposte.append({
                 "Tipo": "chiusa",
                 "Azienda": azienda_scelta,
                 "Utente": utente,
                 "Domanda": row["Domanda"],
                 "Argomento": row["principio"],
-                "Risposta": sel,
+                "Risposta": "; ".join(sel) if isinstance(sel, list) else sel,
                 "Corretta": row["Corretta"],
                 "Esatta": is_corr
             })
 
-    # Pulsante invio con blocco immediato
-    submit_clicked = st.button("Invia Risposte")
+    # Pulsante invio
+    if not st.session_state["submitted"]:
+        if st.button("Invia Risposte"):
+            st.session_state["submitted"] = True
+            st.rerun()
 
-    if submit_clicked:
-        st.session_state["submitted"] = True
-        st.rerun()
-
-# Risultati e invio email
+# Step 5: Risultati e invio email
 if st.session_state["submitted"]:
     st.success("Risposte inviate.")
     
@@ -209,7 +220,6 @@ if st.session_state["submitted"]:
         df_r.to_excel(writer, index=False, sheet_name="Risposte", startrow=3)
     buf.seek(0)
 
-    # Invio email solo se non già inviata
     if not st.session_state["email_inviata"]:
         msg = MIMEMultipart()
         msg["From"] = "infusionauxiell@gmail.com"
@@ -224,7 +234,7 @@ if st.session_state["submitted"]:
         try:
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
-                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")
+                server.login("infusionauxiell@gmail.com", "TUA_PASSWORD_PER_APP")
                 server.send_message(msg)
             st.success(f"Email inviata a {email_mentor}")
             st.session_state["email_inviata"] = True
