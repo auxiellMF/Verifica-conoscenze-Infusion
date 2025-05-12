@@ -31,7 +31,7 @@ st.markdown("""
     .fixed-logo-divider {
         border: none;
         height: 1px;
-        background-color: #444;
+        background-color: #ccc;
         margin: 0;
         padding: 0;
     }
