@@ -87,26 +87,9 @@ if st.session_state["azienda_scelta"] is None:
 
 # Step 2: filtro domande per azienda
 azienda_scelta = st.session_state["azienda_scelta"]
-
-# Applica tema scuro ogni volta se l'azienda è stata scelta
-st.markdown("""
-    <style>
-    body, .stApp {
-        background-color: #000 !important;
-        color: white !important;
-    }
-    .css-1v0mbdj, .stTextInput input, .stSelectbox div, .stRadio div, .stMultiSelect div {
-        background-color: #333 !important;
-        color: white !important;
-    }
-    label, .stRadio label, .stMultiSelect label {
-        color: white !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 df_filtrato = df[df["Azienda"] == azienda_scelta]
 
+# Selezione domande per argomento
 if "domande_selezionate" not in st.session_state:
     st.session_state["domande_selezionate"] = (
         df_filtrato.groupby("principio", group_keys=False)
@@ -115,10 +98,12 @@ if "domande_selezionate" not in st.session_state:
     )
 domande = st.session_state["domande_selezionate"]
 
+# Step 3: input utente
 utente = st.text_input("Inserisci il tuo nome")
 email_compilatore = st.text_input("Inserisci la tua email aziendale")
 email_mentor = st.text_input("Inserisci l'indirizzo e-mail del tuo main mentor")
 
+# Validazione email
 errore_email = None
 dominio_atteso = {
     "auxiell": "@auxiell.com",
@@ -137,12 +122,14 @@ elif email_compilatore and email_mentor and email_compilatore == email_mentor:
 if errore_email:
     st.warning(errore_email)
 
+# Pulsante Prosegui
 if utente and email_compilatore and email_mentor and not errore_email and not st.session_state["proseguito"]:
     st.markdown("<div style='text-align: center; margin-top:20px;'><br>", unsafe_allow_html=True)
     if st.button("Prosegui"):
         st.session_state["proseguito"] = True
     st.markdown("</div>", unsafe_allow_html=True)
 
+# Step 4: Quiz
 if st.session_state["proseguito"]:
     risposte = []
     st.write("### Rispondi alle seguenti domande:")
@@ -150,7 +137,11 @@ if st.session_state["proseguito"]:
     for idx, row in domande.iterrows():
         st.markdown(f"**{row['Domanda']}**")
         if pd.isna(row["opzione 1"]):
-            ans = st.text_input(f"Risposta libera ({row['principio']})", key=f"open_{idx}", disabled=st.session_state["submitted"])
+            ans = st.text_input(
+                f"Risposta libera ({row['principio']})",
+                key=f"open_{idx}",
+                disabled=st.session_state["submitted"]
+            )
             risposte.append({
                 "Tipo": "aperta",
                 "Azienda": azienda_scelta,
@@ -166,10 +157,22 @@ if st.session_state["proseguito"]:
             corrette = [c.strip() for c in str(row["Corretta"]).split(";")]
 
             if len(corrette) > 1:
-                sel = st.multiselect(f"(Risposte multiple) Argomento: {row['principio']}", opts, key=idx, default=[], disabled=st.session_state["submitted"])
+                sel = st.multiselect(
+                    f"(Risposte multiple) Argomento: {row['principio']}",
+                    opts,
+                    key=idx,
+                    default=[],
+                    disabled=st.session_state["submitted"]
+                )
                 is_corr = set(sel) == set(corrette)
             else:
-                sel = st.radio(f"Argomento: {row['principio']}", opts, key=idx, index=None, disabled=st.session_state["submitted"])
+                sel = st.radio(
+                    f"Argomento: {row['principio']}",
+                    opts,
+                    key=idx,
+                    index=None,
+                    disabled=st.session_state["submitted"]
+                )
                 is_corr = sel == corrette[0]
 
             risposte.append({
@@ -183,13 +186,16 @@ if st.session_state["proseguito"]:
                 "Esatta": is_corr
             })
 
+    # Pulsante invio
     if not st.session_state["submitted"]:
         if st.button("Invia Risposte"):
             st.session_state["submitted"] = True
             st.rerun()
 
+# Step 5: Risultati e invio email
 if st.session_state["submitted"]:
     st.success("Risposte inviate.")
+    
     df_r = pd.DataFrame(risposte)
     chiuse = df_r[df_r["Tipo"] == "chiusa"]
     n_tot = len(chiuse)
@@ -197,8 +203,14 @@ if st.session_state["submitted"]:
     perc = int(n_cor / n_tot * 100) if n_tot else 0
     st.success(f"Punteggio finale: {n_cor} su {n_tot} ({perc}%)")
 
+    # Creazione file Excel
     data_test = datetime.now().strftime("%d/%m/%Y")
-    info = pd.DataFrame([{ "Nome": utente, "Data": data_test, "Punteggio": f"{perc}%", "Azienda": azienda_scelta }])
+    info = pd.DataFrame([{
+        "Nome": utente,
+        "Data": data_test,
+        "Punteggio": f"{perc}%",
+        "Azienda": azienda_scelta
+    }])
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         info.to_excel(writer, index=False, sheet_name="Risposte", startrow=0)
@@ -222,7 +234,7 @@ if st.session_state["submitted"]:
         try:
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
-                server.login("infusionauxiell@gmail.com", "TUA_PASSWORD_PER_APP")
+                server.login("infusionauxiell@gmail.com", "ubrwqtcnbyjiqach")
                 server.send_message(msg)
             st.success(f"Email inviata a {email_mentor}")
             st.session_state["email_inviata"] = True
